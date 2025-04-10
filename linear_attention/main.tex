@@ -1,0 +1,490 @@
+\documentclass[aspectratio=169]{beamer}
+\usetheme{Darmstadt}
+\usecolortheme{seahorse}
+\setbeamertemplate{caption}[numbered]
+\useoutertheme{infolines}
+\setbeamertemplate{footline}{
+	\hspace*{1cm}\scriptsize{\hspace*{10pt}\hfill\insertframenumber\hspace*{.5cm}}
+	% \\
+	\vspace{3pt}
+}
+
+\title{From Attention to Recall}
+
+\author{Ayoub Ghriss}
+
+% \date{April 4th, 2025}
+
+\usepackage[utf8]{inputenc}
+\usepackage{fontawesome5}
+\usepackage{amsmath, amssymb, latexsym}
+\usepackage{multicol}
+\usepackage{dsfont}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage[backend=biber, safeinputenc]{biblatex}
+\bibliography{citations}
+\input{commands.tex}
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}{Attention}
+	In an autoregressive (causal) attention block after step $N$, given a query $q_t$  $(t=N+1)$ we compute:
+
+	\begin{align*}
+		Att(q_t, K, V) & =\by{s_t}V^\top a_t\in\R^{d_v}      \\
+		a_t            & = \exp\lrp{\frac{K q_t}{\sqrt{d}}}, \\
+		s_t            & ={a_t}^\top 1_n
+	\end{align*}
+
+	where $d$ is the dimension of the QK space and $d_v$ of the V space. The
+	computation and memory cost is $O(Nd)$.
+
+	In non-causal (ViT) where each patch attends to all other patches, the
+	computation cost is $O(N^2d)$ and memory cost is $N(d + d_v)$.
+
+\end{frame}
+\begin{frame}
+	Let's look at ViT attention:
+
+	\begin{align*}
+		Att(Q, K, V)  =S^{-1} AV,\ A = \exp\lrp{\frac{QK^\top}{\sqrt{d}}},\ S =A 1_n
+	\end{align*}
+
+	The goal is to replace $\exp$ by an efficient activation $f$:
+	$\exp(\lrangle{q,k}) \leftrightarrow \lrangle{\psi_f(q),\psi_f(k)}$ where
+	$\psi_f:\R_d\to\R_q$.
+
+	Then
+	\begin{align*}
+		A & = \psi_f(Q) \psi_f(K)^T = Q_\psi {K_\psi}^\top & \text{row-wise } \psi
+	\end{align*}
+
+	Then the attention operation becomes:
+	\begin{align*}
+		Att(Q, K, V) & =\frac{Q_\psi {K_\psi}^\top}{Q_\psi {K_\psi}^\top\one{n}} V
+		= \frac{Q_\psi B_\psi}{Q_\psi C_\psi}
+	\end{align*}
+	where $B_\psi={K_\psi}^\top V \in \R^{d\times d_v}$ and $C_\psi={K_\psi}^\top\one n \in\R^d$.
+	Time $O(N q d_v)$ and space $(q(1+d_v))$.
+\end{frame}
+
+\begin{frame}
+	For autoregressive transformer, with
+	\begin{align*}
+		Att(Q, K, V) & = \frac{Q_\psi B_\psi}{Q_\psi C_\psi}
+	\end{align*}
+	it constant time for each new token. But memory-wise, it's only advantageous when
+	$N > \frac{q(1+d_v)}{d+d_v} > 1$, for $d=d_v =q= 128$, $N>64$ (not bad).
+
+\end{frame}
+% One of the earliest attempts at reducing the computation and memory costs
+% related to the K,V storage and attention computation is
+% [Linformers](https://arxiv.org/pdf/2006.04768) adopts a different approach by
+% reducing $exp(Q K^T)V$ to a lower rank approximation using $K'=EK\in\R^{k\times
+% d}$ and $V'=FV\in\R^{k\times d_v}$ thus reducing the inference complexity to
+% $O(nkd)$ (instead of $n^2 d$) and the storage to $O(k(d_v+d))$.
+%
+% Let's now look at the attention scores computed at time $t$, which we can write
+% as: $$ z_t = att(q_t,K,V) = \by{\sum_i \exp(\lrangle{q_t,k_i})}\sum_i
+% \exp(\lrangle{q_t,k_i}) v_i $$
+
+\newcommand{\reals}{\mathbb{R}}
+\newcommand{\set}[1]{\mathcal{#1}}
+\newcommand{\norm}[1]{\left\Vert #1 \right\Vert_2} % L2 norm
+\newcommand{\innerprod}[2]{\left\langle #1, #2 \right\rangle}
+\newcommand{\matr}[1]{\mathbf{#1}} % Or use \bm{#1} if using bm package
+
+\begin{frame}{Random Projection with Johnson-Lindenstrauss}
+	Let's start with Linformers\footfullcite{linformers}:
+	\begin{itemize}
+		\item Goal: project a set of $n$ points $X = {x_1, ..., x_n}\in\R^{n\times
+		      d}$ to $\R^{k\times d}$ where $k << n$.
+		\item JL Lemma states that there exists a random projection matrix
+		      $\matr{P} \in \reals^{k \times n}$ (where $k = O(\log n /
+		      \epsilon^2)$) such that for any pair $\matr{x}_i, \matr{x}_j \in
+		      \set{X}$, with high probability: $$ (1 - \epsilon) \norm{\matr{x}_i -
+		      \matr{x}_j}^2 \le \norm{\matr{P}\matr{x}_i - \matr{P}\matr{x}_j}^2
+		      \le (1 + \epsilon) \norm{\matr{x}_i - \matr{x}_j}^2 $$
+		\item The target dimension $k$ is independent of the original dimension
+		      $n$.
+	\end{itemize}
+
+\end{frame}
+
+\begin{frame}{Distributional Johnson-Lindenstrauss (DJL)}
+
+	Consider $\set{X} = \{\matr{x}_1, \dots, \matr{x}_N\} \subset \reals^n$ and
+	$\set{Y} = \{\matr{y}_1, \dots, \matr{y}_M\} \subset \reals^n$. Let $\matr{E}
+	\in \reals^{k \times n}$ and $\matr{F} \in \reals^{k \times n}$ be two random
+	projection matrices (typically i.i.d. subgaussian).
+
+	The DJL guarantees about the preservation of relationships \textbf{between}
+	points from $\set{X}$ and points from $\set{Y}$ after projection. For instance,
+	it might guarantee that for any pair $\matr{x}_i \in \set{X}$ and $\matr{y}_j
+	\in \set{Y}$:
+	\begin{itemize}
+
+		\item \textbf{Distance Preservation:}
+		      $\norm{\matr{E}\matr{x}_i - \matr{F}\matr{y}_j}^2$ is concentrated around $\norm{\matr{x}_i - \matr{y}_j}^2$ (perhaps with some scaling factor depending on the normalization of $\matr{E}$ and $\matr{F}$).
+
+		\item \textbf{Inner Product Preservation:}
+		      $\innerprod{\matr{E}\matr{x}_i}{\matr{F}\matr{y}_j}$ ($\matr{x}_i^\top
+			      \matr{E}^\top \matr{F} \matr{y}_j$)
+		      is close to
+		      $\innerprod{\matr{x}_i}{\matr{y}_j} = \matr{x}_i^\top \matr{y}_j$.
+		\item A common form shows that $\mathbb{E}[\matr{x}_i^\top \matr{E}^\top
+		      \matr{F} \matr{y}_j]$ is proportional to $\matr{x}_i^\top
+		      \matr{y}_j$.
+
+	\end{itemize}
+
+\end{frame}
+
+\begin{frame}
+	\begin{theorem}[Linformer Approximation Guarantee] \label{thm:linformer}
+		Let the original attention matrix be $\matr{P} = \softmax\left(\frac{\matr{Q}\matr{K}^\top}{\sqrt{d}}\right) \in \reals^{n \times n}$.
+		Let $\matr{E}, \matr{F} \in \reals^{k \times n}$ be two random projection matrices satisfying the distributional Johnson-Lindenstrauss (JL) property.
+		Define the projected Key matrix $\tilde{\matr{K}} = \matr{E}\matr{K} \in \reals^{k \times d}$.
+		Define the low-rank attention matrix $\tilde{\matr{P}} = \softmax\left(\frac{\matr{Q}\tilde{\matr{K}}^\top}{\sqrt{d}}\right) = \softmax\left(\frac{\matr{Q}\matr{K}^\top \matr{E}^\top}{\sqrt{d}}\right) \in \reals^{n \times k}$.
+
+		Assume the largest singular value
+		$\sigma_1\left(\frac{\matr{Q}\matr{K}^\top}{\sqrt{d}}\right) = O(n)$. Then,
+		for any $0 < \epsilon, \delta < 1$, with probability at least $1 - \delta$,
+		we have: $$ \left\Vert \matr{P} - \tilde{\matr{P}}\matr{F} \right\Vert_2
+		\le \epsilon $$ provided that the projection dimension $k$ satisfies: $$ k
+		= \Omega\left( \frac{d \log(d) n_r(\matr{P})}{\epsilon^2} \log(1/\delta)
+		\right) $$ where $n_r(\matr{P}) = \frac{\Vert \matr{P} \Vert_F^2}{\Vert
+		\matr{P} \Vert_2^2}$ is $\matr{P}$, $\Vert \cdot \Vert_2$ denotes the
+		spectral norm.
+	\end{theorem}
+\end{frame}
+\newcommand{\vect}[1]{\mathbf{#1}} % Use \bm{#1} for vectors if preferred
+\newcommand{\calE}{\mathcal{E}}
+\newcommand{\calN}{\mathcal{N}}
+\section*{Main Theoretical Results from the Performer Paper}
+\begin{frame}
+
+	The core idea of Performer is to approximate $\exp$ without explicitly
+	computing the $n \times n$ attention matrix. The standard attention matrix is
+	$\matr{A} = \softmax(\frac{\matr{Q}\matr{K}^\top}{\sqrt{d}})$. Its $(i, j)$-th
+	entry is $A_{ij} = \frac{\exp( \vect{q}_i^\top \vect{k}_j /
+	\sqrt{d})}{\sum_{l=1}^n \exp( \vect{q}_i^\top \vect{k}_l / \sqrt{d})}$.
+
+	Performer approximates this by finding random feature maps $\phi: \reals^d \to
+	\reals^m$ such that the kernel $K(\vect{q}, \vect{k}) = \exp(\vect{q}^\top
+	\vect{k})$ (or related softmax kernel) can be approximated by an inner product
+	in the feature space: $K(\vect{q}, \vect{k}) \approx \phi(\vect{q})^\top
+	\phi(\vect{k})$.
+\end{frame}
+\begin{frame}
+
+	\begin{theorem}[Unbiased Kernel Approximation via Random Features] \label{thm:performer_kernel_approx}
+
+		Let $K(\vect{x}, \vect{y}) = \E_{\omega \sim \mathcal{D}} [ \zeta(\vect{x},
+		\omega)^\top \zeta(\vect{y}, \omega) ]$ be a kernel function expressed as
+		an expectation over random variables $\omega$ drawn from a distribution
+		$\mathcal{D}$.
+
+		Consider the random feature map $\phi: \reals^d \to \reals^m$ defined as:
+		$$ \phi(\vect{x}) = \frac{1}{\sqrt{m}} \begin{bmatrix} \zeta(\vect{x}, \omega_1) \\ \vdots \\ \zeta(\vect{x}, \omega_m) \end{bmatrix}^\top
+		$$
+		where $\omega_1, \dots, \omega_m$ are drawn i.i.d. from $\mathcal{D}$.
+		Then $\phi(\vect{x})^\top \phi(\vect{y})$ is an unbiased estimator of the kernel $K(\vect{x}, \vect{y})$:
+		$$
+			\E_{\omega_1, \dots, \omega_m} [\phi(\vect{x})^\top \phi(\vect{y})] = K(\vect{x}, \vect{y})
+		$$
+
+	\end{theorem}
+
+	Specifically, for the Gaussian kernel $K_G(\vect{x}, \vect{y}) =
+	\exp(\vect{x}^\top \vect{y})$, one can use trigonometric features:
+	$\zeta(\vect{x}, \omega) = [\cos(\omega^\top \vect{x}), \sin(\omega^\top
+	\vect{x})]$ where $\omega \sim \calN(0, \matr{I}_d)$.
+
+\end{frame}
+\begin{frame}
+	Furthermore, the softmax kernel\footfullcite{performers} $\exp(\vect{q}^\top \vect{k} / \sqrt{d})$
+	can be approximated by redefining $\vect{q}' = \vect{q}/\sqrt[4]{d}$ and
+	$\vect{k}' = \vect{k}/\sqrt[4]{d}$, and using features for $K(\vect{q}',
+		\vect{k}') = \exp(\vect{q}'^\top \vect{k}')$. The paper proposes positive
+	random features (e.g., using $\exp(-\Vert \vect{x} \Vert^2 / 2)$
+	multipliers) to ensure non-negativity suitable for the softmax function: $$
+		K_{softmax}(\vect{q}, \vect{k}) \approx \phi_{pos}(\vect{q})^\top
+		\phi_{pos}(\vect{k}) $$ where $\phi_{pos}$ uses features like $
+		\frac{\exp(-\Vert \vect{x} \Vert^2 / 2)}{\sqrt{m}} [\exp(\omega_1^\top
+			\vect{x}), \dots, \exp(\omega_m^\top \vect{x})]^\top$ (or trigonometric
+	variants).
+\end{frame}
+
+\begin{frame}
+	\begin{corollary}[Approximation Error Bound in Performer] \label{cor:performer_error_bound}
+
+		Let $\matr{A} = \softmax(\frac{\matr{Q}\matr{K}^\top}{\sqrt{d}})$ and
+		$\hat{\matr{A}}$ be the attention matrix computed using the FAVOR+
+		mechanism with $m$ positive random features $\phi$: $$ \hat{\matr{A}} =
+		\hat{\matr{D}}^{-1} \hat{\matr{A}}' \quad \text{where} \quad
+		\hat{\matr{A}}' = \phi(\matr{Q}) \phi(\matr{K})^\top \quad \text{and} \quad
+		\hat{\matr{D}} = \diag(\hat{\matr{A}}' \mathbf{1}_n) $$ ($\phi(\matr{Q})$
+		applies $\phi$ row-wise). Then, under suitable assumptions (e.g., on the
+		norms of $\matr{Q}, \matr{K}$), the approximation error relative to the
+		true attention output $\matr{A}\matr{V}$ vs the approximate output
+		$\hat{\matr{A}}\matr{V}$ can be bounded. With high probability (over the
+		choice of random features $\omega_i$), the error $\Vert \matr{A} -
+		\hat{\matr{A}} \Vert$ (or related output error) decreases roughly as
+		$O(1/\sqrt{m})$.
+
+		Specifically, the paper provides bounds like: $$ \E \left\Vert \matr{A} -
+		\hat{\matr{A}} \right\Vert_F^2 \le O\left(\frac{n^2 \cdot
+		\text{poly}(d)}{m}\right) $$
+	\end{corollary}
+	\pause
+
+	The exact form depends on specific assumptions and normalizations). The
+	approximation accuracy improves as the number of random features $m$ increases
+	for a fixed $n$.
+\end{frame}
+
+\begin{frame}
+	\subsection*{Orthogonal Random Features (FAVOR+ Mechanism)}
+
+	A key contribution of FAVOR+ is the use of \textbf{orthogonal random features}.
+	Using random features that are (approximately) orthogonal can significantly
+	reduce the variance of the estimator $\phi(\vect{x})^\top \phi(\vect{y})$ for
+	the same number of features $m$.
+
+	\begin{theorem}[Variance Reduction with Orthogonal Features (Conceptual)] \label{thm:performer_orthogonal}
+
+		Let $\phi(\vect{x})$ and $\tilde{\phi}(\vect{x})$ be two random feature
+		constructions of dimension $m$, both providing unbiased estimates of a
+		kernel $K(\vect{x}, \vect{y})$. If $\tilde{\phi}$ uses random projection
+		vectors $\omega_1, \dots, \omega_m$ that are sampled to be (stochastically)
+		orthogonal or near-orthogonal, while $\phi$ uses i.i.d. samples, then the
+		variance of the estimator based on $\tilde{\phi}$ can be significantly
+		lower: $$ Var[\tilde{\phi}(\vect{x})^\top \tilde{\phi}(\vect{y})] <
+		Var[\phi(\vect{x})^\top \phi(\vect{y})] $$ This leads to a more accurate
+		approximation of the attention matrix $\matr{A}$ for a fixed projection
+		dimension $m$, or allows achieving the same accuracy with a smaller $m$.
+	\end{theorem}
+
+\end{frame}
+\begin{frame}
+
+	Performers: provide the foundation for replacing the $O(n^2 d)$ computation of
+	the standard attention mechanism with an $O(n m d)$ computation using the
+	FAVOR+ mechanism, achieving linear complexity in sequence length $n$ (assuming
+	$m \ll n$). The approximation error is controllable by adjusting $m$.
+
+\end{frame}
+% Define commands for convenience
+\newcommand{\calO}{\mathcal{O}}
+\newcommand{\relu}{\text{ReLU}}
+
+\section*{Main Theoretical Points from the cosFormer Paper}
+\begin{frame}
+	\begin{definition}[cosFormer Attention Mechanism] \label{def:cosformer_attn}
+
+		Let $\matr{Q}, \matr{K}, \matr{V} \in \reals^{N \times d}$. The output for
+		the $i$-th query vector $\vect{q}_i$ is defined as: $$
+		\text{Attn}(\vect{q}_i, \matr{K}, \matr{V}) = \frac{\sum_{j=1}^{N}
+		\cos\left(\omega(i, j)\right) \cdot \relu(\vect{q}_i) \relu(\vect{k}_j)
+		\odot \vect{v}_j}{\sum_{j=1}^{N} \cos\left(\omega(i, j)\right) \cdot
+		\relu(\vect{k}_j)} $$ where $\omega(i-j) = \frac{\pi}{2M}(i-j)$ where $M$
+		is a hyperparameter.
+
+	\end{definition}
+	$$ \text{Output}_i = \sum_{j=1}^{N} \cos(\omega(i-j)) \cdot w_j \cdot v_j $$\
+	\pause
+	Any issue with this approach?
+\end{frame}
+\begin{frame}
+
+	\begin{theorem}[Linear Complexity of cosFormer Attention] \label{thm:cosformer_linear}
+
+		Assume the positional function depends only on the relative position,
+		$\omega(i, j) = \omega(i-j)$. The cosFormer attention output (specifically
+		the numerator sum $\sum_{j=1}^{N} \cos(\omega(i-j)) \cdot w_j v_j$ for each
+		query $i$) can be computed for all $N$ queries simultaneously in
+		$\calO(Nd)$ time complexity (assuming $w_j, v_j$ are derived from
+		$\matr{K}, \matr{V}$ in linear time).
+
+	\end{theorem}
+\end{frame}
+
+\begin{frame}[shrink=30]{Proof sketch}
+
+	Using the cosine angle subtraction formula $\cos(a-b) = \cos(a)\cos(b) +
+	\sin(a)\sin(b)$, we can rewrite the sum:
+	\begin{align*} \label{eq:cos_decomp}
+		\text{Output}_i & = \sum_{j=1}^{N} \cos(\omega(i) - \omega(j)) \cdot (w_j v_j) \quad (\text{assuming } \omega(i-j) \text{ can be written this way}) \\
+		                & = \sum_{j=1}^{N} [\cos(\omega(i))\cos(\omega(j)) + \sin(\omega(i))\sin(\omega(j))] \cdot (w_j v_j)...
+	\end{align*}
+	Let:
+	$$ \matr{S}_C = \sum_{j=1}^{N} \cos(\omega(j)) \cdot (w_j v_j) \quad \in \reals^d $$
+	$$ \matr{S}_S = \sum_{j=1}^{N} \sin(\omega(j)) \cdot (w_j v_j) \quad \in \reals^d $$
+	These two sums, $\matr{S}_C$ and $\matr{S}_S$, depend only on the keys and values and can be computed once for all queries in $\calO(Nd)$ time.
+
+	The output for the $i$-th query is then: $$ \text{Output}_i = \cos(\omega(i))
+	\matr{S}_C + \sin(\omega(i)) \matr{S}_S $$ This final step takes $\calO(d)$
+	time per query $i$. Computing this for all $N$ queries takes $\calO(Nd)$ time.
+
+	The denominator $Z_i = \sum_{j=1}^{N} \cos(\omega(i-j)) w_j$ can be computed
+	similarly in $\calO(N)$ time (if $w_j$ is scalar) or $\calO(Nd)$ (if vector
+	re-weighting).
+
+	Therefore, the overall complexity is dominated by the computation of the sums
+	$\matr{S}_C, \matr{S}_S$ (and similar sums for the denominator), resulting in
+	$\calO(Nd)$ complexity.
+
+\end{frame}
+
+\begin{frame}
+	\subsection*{Conceptual Justification (Not formal theorems)}
+	\begin{itemize}
+		\item \textbf{Connection to RoPE:} The use of cosine functions with relative positions $\omega(i-j)$ is conceptually linked to Rotary Position Embeddings (RoPE), which also uses sinusoidal functions to inject relative positional information effectively.
+		\item \textbf{ReLU Re-weighting:} The $\relu(\vect{k}_j)$ term is motivated as a simple, non-linear gating mechanism to focus attention on relevant key-value pairs, loosely analogous to the data-dependent normalization performed by the softmax denominator.
+	\end{itemize}
+
+	\textbf{Implication:} Theorem \ref{thm:cosformer_linear} demonstrates that the cosFormer attention mechanism, by definition, avoids the quadratic complexity bottleneck of standard attention and achieves linear time complexity $\calO(Nd)$ with respect to sequence length $N$. The paper then empirically shows that this formulation performs competitively with standard attention.
+\end{frame}
+
+\begin{frame}{Hebbian Learning}
+	\frametitle{Architecture}
+	\begin{itemize}
+		\item Single layer of neurons (often binary: +1/-1 or 0/1). Let's assume
+		      bipolar (+1/-1) neurons.
+		\item Fully connected: Every neuron is connected to every other neuron.
+		\item \textbf{Symmetric Weights:} The weight from neuron $i$ to $j$ is the same as from $j$ to $i$ ($w_{ij} = w_{ji}$). This is crucial for stability.
+		\item \textbf{No Self-Connections:} Neurons do not connect to themselves ($w_{ii} = 0$).
+		\item The units of a neural net imitate the neurons.
+	\end{itemize}
+\end{frame}
+
+\begin{frame}
+	\frametitle{Storing Patterns (Learning)}
+	Hopfield networks store patterns using a Hebbian-like rule (often the outer product rule).
+
+	To store $P$ patterns $\mathbf{\xi}^1, \mathbf{\xi}^2, ..., \mathbf{\xi}^P$,
+	where each pattern $\mathbf{\xi}^\mu$ is a vector of $N$ bipolar values
+	(+1/-1): $\mathbf{\xi}^\mu = (\xi_1^\mu, \xi_2^\mu, ..., \xi_N^\mu)$ (N output
+	dimension of a layer)
+
+	The weight between neuron $i$ and $j$ is calculated as:
+	\begin{equation*}
+		w_{ij} = \frac{1}{N} \sum_{\mu=1}^{P} \xi_i^\mu \xi_j^\mu \quad \text{(for } i \neq j \text{)}
+	\end{equation*}
+	And $w_{ii} = 0$.
+
+	\vspace{0.5em}
+	\begin{itemize}
+		\item This sums the Hebbian products ($\xi_i^\mu \xi_j^\mu$) over all
+		      patterns to be stored.
+		\item If two neurons have the same state (+1/+1 or -1/-1) in many patterns,
+		      their connection weight will be positive (excitatory).
+		\item If they have opposite states (+1/-1 or -1/+1) in many patterns, their
+		      weight will be negative (inhibitory).
+	\end{itemize}
+\end{frame}
+
+\begin{frame}
+	\frametitle{Retrieving Patterns (Recall / Dynamics)}
+	Retrieval starts by setting the network state to an initial (potentially noisy or incomplete) pattern.
+
+	Neurons then update their states iteratively until the network converges to a
+	stable state.
+
+	\textbf{Update Rule (Asynchronous):}
+	Pick a neuron $i$ at random. Update its state $s_i$ based on the weighted sum of inputs from other neurons:
+	\begin{enumerate}
+		\item Calculate the input sum: $h_i = \sum_{j \neq i} w_{ij} s_j$
+		\item Apply the threshold function: $s_i(t+1) = \text{sgn}(h_i) =
+			      \begin{cases} +1 & \text{if } h_i \ge 0 \\ -1 & \text{if } h_i < 0 \end{cases}$
+		      (Or keep $s_i(t)$ if $h_i=0$ in some definitions)
+	\end{enumerate}
+	Repeat until no neuron changes its state.
+
+	\vspace{0.5em}
+	\textbf{Goal:} The network should converge to the stored pattern closest (in Hamming distance) to the initial state. These stored patterns act as \textbf{attractors}.
+\end{frame}
+
+\begin{frame}
+	We can draw an analogy between the "kernelized" attention and Hebbian learning (recall):
+
+	\begin{itemize}
+		\item Memorization : $B \leftarrow B +\psi(K)V$, $C \leftarrow C + \psi(K)$
+		\item Recall: $\frac{QB}{C}$
+	\end{itemize}
+\end{frame}
+
+\begin{frame}
+	\begin{itemize}
+		\item  All these methods restrict to feature maps in $\R^+$. Other than
+		      Performers, the other methods do not justify their choice
+		\item Can we do better than $\softmax$ in finite dimension?
+		\item Can we find a non-positive feature map $\psi_f$ that keeps $f$
+		      non-negative?
+	\end{itemize}
+
+	We claim that any activation of the form $(x,y) \mapsto f(<x,y>)$ where $f$ is
+	polynomial of degree $m$ requires $q = O(d^m)$. That is, if $f$ is analytical
+	then $\psi_f$ maps to an infinite dimensional space.
+
+	$f_p(x,y)= (<x_p>)^p$ can be generated using the feature map $\psi$ that maps $x$ to the terms
+	of $(\sum_i x_i)^p$.
+
+\end{frame}
+
+\begin{frame}
+
+	We claim that if $q$ is finite and verifies $\lrangle{\psi(x), \psi(y)}>0,
+	\forall x,y$
+
+	then there is an orthogonal matrix $O\in\R^{q\times q}$ such that $x\mapsto
+	O\psi(x)$ has its image in the positive orthant.
+
+	\begin{itemize}
+		\item $\lrangle{\psi(x), \psi(y)}>0, \forall x,y$: image of $\psi$ is included
+		      in a non-obtuse cone, we can convexity of it to work with a larger closed
+		      convex cone $K$.
+		\item How do we prove that $K$ can be rotated into the positive orthant: I
+		      think so
+	\end{itemize}
+\end{frame}
+
+\begin{frame}
+	Take $K$ non-obtuse closed convex cone in $\R_2$, let $u$ be an extreme ray of $C$:
+
+	Take $v=u^\perp$ and project $C$ on $v$. We should now prove that $P(C)$ is
+	also obtuse cone of $R^1$, if $x^\perp$ in $C^\perp$, then it's a projection of
+	an element in $C$ and due to the linearity of the projection, the properties
+	apply.
+
+	Now we need to show it's obtuse: $\lrangle{x^\perp,y^\perp} >0$
+
+	$$
+		\lrangle{x,y} =\lrangle{x_u,y_u} +  \lrangle{x_v,y_v}
+	$$
+
+	$\lrangle{x^\perp,y^\perp} < 0$ if and only if $\lrangle{x,y}\leq\lrangle{x_u,y_u}$
+
+	Then $x= x_u + x_v$ and $y = y_u + y_v$ where $x_v$ and $y_v$ are opposite.
+
+	We have $u$ minimizes $<u,z>$ for some $z =z_u + z_v$
+
+	take $w = \alpha x + (1-\alpha)y$ normalized.
+
+	Then $<z, w> =<w_u,z_u> +<w_v,z_v>$.
+
+	however, $u$ is extremal, that is:
+
+	Update: doesn't work. Take second order cone, it's still non-obtuse,but not
+	inside the positive orthant. Generally, $\psi$ has to map to self-dual cone,
+	but the positive orthant is just one of them.
+
+\end{frame}
+
+\end{document}
