@@ -76,6 +76,14 @@ python3 -m http.server 8000
 
 [index.html](index.html) needs HTTP to load source files. [presentation.html](presentation.html) opens directly from disk. No npm installation is required.
 
+The [PDF version](pdf/how-llms-recall.pdf) contains 24 widescreen pages, one final animation state per slide, with vector graphics and embedded fonts. Rebuild it from this folder with Node.js and `rsvg-convert` (provided by librsvg):
+
+```sh
+node scripts/export_pdf.mjs
+```
+
+This export uses the same SVG figures and headlines in a static version of the slide layout. It omits speaker notes and presenter controls.
+
 Append `?static` before the slide hash to show final states. Reveal.js PDF export uses `?print-pdf`; print landscape with background graphics enabled. See the [export instructions](https://revealjs.com/pdf-export/).
 
 ## Mathematical scope
