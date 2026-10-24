@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Ayoub Ghriss — 24 visual slides for 20 minutes: Hebbian learning, associative memories, attention, KATA key geometry, capacity, and the delta rule.">
+  <title>How LLMs recall</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="stylesheet" href="vendor/reveal/reset.css">
+  <link rel="stylesheet" href="vendor/reveal/reveal.css">
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="styles/deck.css">
+</head>
+<body>
+  <div id="loading" role="status">Opening the presentation…</div>
+  <div class="reveal"><div class="slides"></div></div>
+  <nav class="deck-controls" aria-label="Presentation controls">
+    <button id="replay" title="Replay this build (R)" aria-label="Replay this build">↺</button>
+    <button id="previous" title="Previous step (←)" aria-label="Previous step">←</button>
+    <span id="position" aria-live="off">01 / 24</span>
+    <button id="next" title="Next step (→ or Space)" aria-label="Next step">→</button>
+    <button id="help" title="Keyboard shortcuts (?)" aria-label="Show keyboard shortcuts">?</button>
+  </nav>
+  <dialog id="shortcuts">
+    <button class="close-dialog" aria-label="Close keyboard shortcuts">×</button>
+    <p class="eyebrow">PRESENTER CONTROLS</p>
+    <h2>Keyboard shortcuts</h2>
+    <dl>
+      <dt>→ / Space</dt><dd>Next build, then next slide</dd>
+      <dt>←</dt><dd>Previous build or slide</dd>
+      <dt>R</dt><dd>Replay this slide from the beginning</dd>
+      <dt>A</dt><dd>Reveal the final frame</dd>
+      <dt>S</dt><dd>Open speaker view and notes</dd>
+      <dt>F</dt><dd>Fullscreen</dd>
+      <dt>Esc / O</dt><dd>Slide overview</dd>
+      <dt>M</dt><dd>Toggle reduced motion</dd>
+    </dl>
+    <button id="motion" class="text-button">Reduce motion</button>
+    <p class="dialog-hint">Each click reveals one idea. Nothing advances on a timer.</p>
+  </dialog>
+  <script src="vendor/reveal/reveal.js"></script>
+  <script src="vendor/reveal/markdown.js"></script>
+  <script src="vendor/reveal/notes.js"></script>
+  <script src="vendor/katex/katex.min.js"></script>
+  <script type="module" src="js/deck.js"></script>
+</body>
+</html>

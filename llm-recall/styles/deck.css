@@ -1,0 +1,88 @@
+:root {
+  --bg:#11161d; --panel:#19222d; --ink:#f4f0e8; --muted:#b6c4d5;
+  --line:#334153; --teal:#68dbcb; --amber:#f2c477; --violet:#b9a2ff; --red:#f18e91;
+  --r-background-color:#11161d; --r-main-color:#f4f0e8; --r-heading-color:#f4f0e8; --r-link-color:#68dbcb;
+  --font:"Avenir Next","Segoe UI",Arial,sans-serif;
+  --mono:"SFMono-Regular",Consolas,"Liberation Mono",monospace;
+}
+* { box-sizing:border-box; }
+html,body,body.reveal-viewport,.reveal { background-color:var(--bg); color:var(--ink); color-scheme:dark; }
+body.reveal-viewport { background-color:#11161d; color:#f4f0e8; }
+body.reveal-viewport .reveal .slide-background-content { background-color:var(--bg); }
+body { font-family:var(--font); }
+button { font:inherit; cursor:pointer; }
+button:focus-visible,a:focus-visible { outline:3px solid var(--teal); outline-offset:5px; }
+#loading { position:fixed; inset:0; display:grid; place-content:center; font-size:24px; z-index:100; background:var(--bg); }
+#loading[hidden] { display:none; }
+#loading.error { padding:48px; line-height:1.6; color:var(--red); }
+.reveal { font-family:var(--font); font-size:30px; color:var(--ink); }
+.reveal .slides { text-align:left; }
+.reveal .slides>section { width:1600px; height:900px; padding:56px 80px 64px; overflow:hidden; box-sizing:border-box; transition-duration:650ms; }
+.reveal h1,.reveal h2 { font-family:var(--font); font-size:70px; line-height:1.12; font-weight:650; letter-spacing:-.04em; text-transform:none; color:var(--ink); margin:0; }
+.reveal p { line-height:1.5; margin:0; }
+.reveal strong { color:var(--ink); font-weight:650; }
+.reveal a { color:var(--teal); }
+.slide-masthead { display:flex; align-items:center; justify-content:space-between; height:20px; margin-bottom:25px; }
+.wordmark { display:flex; align-items:center; gap:12px; font-size:15px; font-weight:650; letter-spacing:.15em; }
+.wordmark:before { content:""; width:7px; height:7px; border-radius:50%; background:var(--teal); }
+.chapter-tag { font:14px var(--mono); letter-spacing:.08em; color:var(--muted); }
+.slide-heading { margin-bottom:24px; }
+.reveal .title-slide h1 { font-size:96px; }
+.title-slide .content-layout,.title-slide .slide-visual { height:560px; }
+.title-slide .diagram { height:540px; }
+.title-slide .build-dots { visibility:hidden; }
+.content-layout { height:600px; }
+.slide-copy:empty { display:none; }
+.slide-copy { font-size:28px; }
+.slide-visual { position:relative; width:100%; height:600px; margin:0; display:flex; flex-direction:column; align-items:center; }
+.diagram { width:100%; height:580px; display:flex; align-items:center; justify-content:center; }
+.diagram svg { width:100%; height:100%; overflow:visible; font-family:var(--font); }
+.diagram .label { font-family:var(--font); fill:var(--ink); }
+.diagram .mono { font-family:var(--mono); }
+.figure-caption { height:20px; margin-top:6px; }
+.build-dots { display:flex; gap:7px; align-items:center; height:14px; }
+.build-dot { height:4px; width:14px; background:var(--line); border-radius:4px; transition:background-color 600ms ease; }
+.build-dot.done { background:var(--teal); }
+/* Stage descriptions remain available to assistive technology, not as slide prose. */
+.caption-text { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+.slide-bottom { position:absolute; left:80px; bottom:36px; right:340px; font:16px var(--mono); color:var(--muted); }
+.slide-bottom a { color:var(--muted); text-decoration:none; }
+.slide-bottom a:hover { color:var(--teal); text-decoration:underline; }
+.step-marker { position:absolute; width:0; height:0; overflow:hidden; pointer-events:none; }
+.reveal .progress { height:3px; color:var(--teal); background:#26303d; }
+.reveal .slide-number { display:none; }
+.deck-controls { position:fixed; bottom:17px; right:24px; display:flex; align-items:center; gap:7px; z-index:20; background:var(--bg); padding:5px 8px; border-radius:8px; }
+.deck-controls button { border:0; color:var(--muted); background:none; width:32px; height:32px; border-radius:5px; font-size:20px; }
+.deck-controls button:hover { background:#263140; color:var(--ink); }
+.deck-controls #help { font-size:14px; width:25px; }
+.deck-controls #position { font:12px var(--mono); color:var(--muted); padding:0 7px; min-width:71px; text-align:center; }
+.deck-controls #replay { font-size:23px; margin-right:9px; }
+dialog { border:1px solid #526276; border-radius:18px; background:var(--panel); color:var(--ink); width:580px; max-width:92vw; padding:42px; font-family:var(--font); box-shadow:0 20px 100px #0009; }
+dialog::backdrop { background:#070c13b8; backdrop-filter:blur(6px); }
+dialog .eyebrow { font:12px var(--mono); color:var(--teal); letter-spacing:.13em; }
+dialog h2 { font-size:34px; letter-spacing:-.04em; margin:14px 0 25px; }
+dialog dl { display:grid; grid-template-columns:110px 1fr; gap:15px; font-size:16px; }
+dialog dt { font-family:var(--mono); color:var(--teal); }
+dialog dd { margin:0; color:var(--muted); }
+dialog .close-dialog { position:absolute; right:18px; top:13px; color:var(--muted); border:0; background:none; font-size:28px; }
+.text-button { background:none; border:1px solid #526276; padding:9px 13px; border-radius:6px; color:var(--ink); margin-top:25px; }
+.dialog-hint { font-size:14px; color:var(--muted); margin:24px 0 0; line-height:1.6; }
+.reduced-motion *,.reduced-motion *:before,.reduced-motion *:after { animation:none!important; transition:none!important; scroll-behavior:auto!important; }
+@media(prefers-reduced-motion:reduce) {
+  body:not(.motion-enabled) *,body:not(.motion-enabled) *:before,body:not(.motion-enabled) *:after { animation:none!important; transition:none!important; }
+}
+@media(max-width:700px) {
+  .deck-controls { right:10px; bottom:9px; gap:3px; padding:3px; }
+  .deck-controls button { width:28px; height:28px; }
+  .deck-controls #replay { margin-right:2px; }
+}
+.reveal.overview .slides section { background:var(--bg); box-shadow:0 0 0 3px #48546a; }
+.reveal.overview .slides section.present { box-shadow:0 0 0 4px var(--teal); }
+html.print-pdf .deck-controls,html.print-pdf #shortcuts { display:none!important; }
+html.print-pdf .reveal .slides>section { padding:56px 80px 64px!important; }
+html.print-pdf .diagram * { animation:none!important; }
+html.print-pdf .slide-bottom { right:80px; }
+html.print-pdf .build-dots { visibility:hidden; }
+@media print {
+  html body.reveal-viewport,html:not(.print-pdf) .reveal { background-color:var(--bg)!important; color:var(--ink)!important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+}

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Slides and research presentations by Ayoub Ghriss.">
+  <meta name="color-scheme" content="dark">
+  <link rel="canonical" href="https://slides.ayghri.me/">
+  <link rel="icon" type="image/svg+xml" href="./llm-recall/assets/favicon.svg">
+  <title>Slides — Ayoub Ghriss</title>
+  <style>
+    :root { color-scheme:dark; --bg:#11161d; --ink:#f4f0e8; --muted:#b6c4d5; --line:#334153; --accent:#68dbcb; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--ink); font-family:"Avenir Next","Segoe UI",Arial,sans-serif; line-height:1.5; }
+    .page { width:min(960px,100%); min-height:100svh; margin:auto; padding:48px 32px 28px; display:flex; flex-direction:column; }
+    a { color:inherit; text-decoration:none; }
+    a:focus-visible { outline:3px solid var(--accent); outline-offset:7px; border-radius:3px; }
+    header { display:flex; align-items:center; justify-content:space-between; gap:24px; }
+    .name { font-size:17px; font-weight:600; }
+    .website { color:var(--muted); font-size:15px; }
+    header a:hover,footer a:hover { color:var(--accent); }
+    main { flex:1; padding:90px 0 100px; }
+    h1 { margin:0; font-size:clamp(48px,8vw,72px); font-weight:650; letter-spacing:-.055em; line-height:1.1; }
+    .intro { margin:18px 0 48px; color:var(--muted); font-size:20px; }
+    .talks { list-style:none; padding:0; margin:0; border-top:1px solid var(--line); }
+    .talks li { border-bottom:1px solid var(--line); }
+    .talk { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:32px; padding:30px 0; transition:color 180ms ease; }
+    .meta { margin:0 0 10px; color:var(--muted); font-size:14px; }
+    h2 { margin:0; font-size:clamp(25px,4vw,32px); font-weight:600; line-height:1.25; letter-spacing:-.025em; }
+    .description { margin:12px 0 0; max-width:48ch; color:var(--muted); font-size:17px; }
+    .arrow { color:var(--accent); font-size:32px; transition:transform 180ms ease; }
+    .talk:hover h2 { color:var(--accent); }
+    .talk:hover .arrow { transform:translateX(4px); }
+    footer { display:flex; flex-wrap:wrap; justify-content:space-between; gap:12px 24px; padding-top:24px; color:var(--muted); font-size:14px; }
+    footer p { margin:0; }
+    @media (max-width:560px) {
+      .page { padding:28px 24px 24px; }
+      main { padding:64px 0 80px; }
+      .intro { margin-bottom:36px; font-size:18px; }
+      .talk { gap:20px; padding:26px 0; }
+      .description { font-size:16px; }
+    }
+    @media (prefers-reduced-motion:reduce) { .talk,.arrow { transition:none; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <a class="name" href="https://ayghri.me">Ayoub Ghriss</a>
+      <a class="website" href="https://ayghri.me">ayghri.me ↗</a>
+    </header>
+    <main>
+      <h1>Slides</h1>
+      <p class="intro">Research talks and presentations.</p>
+      <ul class="talks" aria-label="Presentations">
+        <li>
+          <a class="talk" href="./llm-recall/" aria-labelledby="llm-recall-title" aria-describedby="llm-recall-meta llm-recall-description">
+            <div>
+              <p class="meta" id="llm-recall-meta">20 min · 24 slides</p>
+              <h2 id="llm-recall-title">How LLMs recall</h2>
+              <p class="description" id="llm-recall-description">Associative memories, attention, and the geometry of recall.</p>
+            </div>
+            <span class="arrow" aria-hidden="true">→</span>
+          </a>
+        </li>
+      </ul>
+    </main>
+    <footer>
+      <p>Ayoub Ghriss</p>
+      <a href="mailto:ghriss@wustl.edu">ghriss@wustl.edu</a>
+    </footer>
+  </div>
+</body>
+</html>
