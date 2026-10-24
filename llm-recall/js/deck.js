@@ -5,8 +5,15 @@ const params = new URLSearchParams(location.search);
 const isPrint = params.has('print-pdf');
 const isStatic = isPrint || params.has('static');
 const motionPreference = matchMedia('(prefers-reduced-motion: reduce)');
-let reducedMotion = motionPreference.matches || isStatic;
-let motionOverride = false;
+const motionStorageKey = 'llm-recall-motion';
+let motionOverride = null;
+// Direct file access and privacy settings can make storage unavailable.
+try {
+  const saved = localStorage.getItem(motionStorageKey);
+  if (saved === 'on' || saved === 'off') motionOverride = saved;
+} catch {}
+let motionSaved = motionOverride !== null;
+let reducedMotion = isStatic || (motionOverride === null ? motionPreference.matches : motionOverride === 'off');
 const models = new Map();
 const parser = RevealMarkdown().marked;
 const parse = (source) => parser(source, { mangle: false, headerIds: false });
@@ -30,7 +37,18 @@ function renderMarkdown(source) {
 function setMotion() {
   document.body.classList.toggle('reduced-motion', reducedMotion);
   document.body.classList.toggle('motion-enabled', !reducedMotion);
-  document.querySelector('#motion').textContent = reducedMotion ? 'Enable motion' : 'Reduce motion';
+  const button = document.querySelector('#motion');
+  button.textContent = reducedMotion ? 'Motion off' : 'Motion on';
+  button.setAttribute('aria-pressed', String(!reducedMotion));
+  button.disabled = isStatic;
+  button.title = isStatic ? 'Motion is disabled in static and print views' : `${reducedMotion ? 'Enable' : 'Reduce'} motion (M)`;
+  document.querySelector('#motion-status').textContent = isStatic
+    ? 'Static and print views show final states without animation.'
+    : motionOverride !== null
+      ? `Animations are ${reducedMotion ? 'off' : 'on'}. ${motionSaved ? 'Your choice is saved for this browser.' : 'Your choice applies to this visit.'}`
+      : reducedMotion
+        ? 'Your device requests reduced motion. Press M or use the Motion button to enable animations.'
+        : 'Animations follow your device setting. Press M or use the Motion button to switch.';
 }
 
 function currentStep(section) {
@@ -68,8 +86,14 @@ function finish() {
 }
 
 function toggleMotion() {
+  if (isStatic) return;
   reducedMotion = !reducedMotion;
-  motionOverride = true;
+  motionOverride = reducedMotion ? 'off' : 'on';
+  motionSaved = false;
+  try {
+    localStorage.setItem(motionStorageKey, motionOverride);
+    motionSaved = true;
+  } catch {}
   setMotion();
   Reveal.configure({ transition: reducedMotion ? 'none' : 'fade' });
   paint(Reveal.getCurrentSlide(), false);
@@ -167,7 +191,7 @@ async function start() {
     if (dialog.open && !['Escape', 'Tab'].includes(e.key)) e.stopPropagation();
   }, true);
   motionPreference.addEventListener('change', e => {
-    if (!motionOverride && !isStatic) { reducedMotion = e.matches; setMotion(); Reveal.configure({ transition: reducedMotion ? 'none' : 'fade' }); paint(Reveal.getCurrentSlide(), false); }
+    if (motionOverride === null && !isStatic) { reducedMotion = e.matches; setMotion(); Reveal.configure({ transition: reducedMotion ? 'none' : 'fade' }); paint(Reveal.getCurrentSlide(), false); }
   });
 }
 

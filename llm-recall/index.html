@@ -15,6 +15,7 @@
   <div id="loading" role="status">Opening the presentation…</div>
   <div class="reveal"><div class="slides"></div></div>
   <nav class="deck-controls" aria-label="Presentation controls">
+    <button id="motion" aria-label="Animations" aria-pressed="false" title="Toggle motion (M)">Motion</button>
     <button id="replay" title="Replay this build (R)" aria-label="Replay this build">↺</button>
     <button id="previous" title="Previous step (←)" aria-label="Previous step">←</button>
     <span id="position" aria-live="off">01 / 24</span>
@@ -33,9 +34,9 @@
       <dt>S</dt><dd>Open speaker view and notes</dd>
       <dt>F</dt><dd>Fullscreen</dd>
       <dt>Esc / O</dt><dd>Slide overview</dd>
-      <dt>M</dt><dd>Toggle reduced motion</dd>
+      <dt>M</dt><dd>Toggle animations</dd>
     </dl>
-    <button id="motion" class="text-button">Reduce motion</button>
+    <p id="motion-status" class="dialog-hint" role="status"></p>
     <p class="dialog-hint">Each click reveals one idea. Nothing advances on a timer.</p>
   </dialog>
   <script src="vendor/reveal/reveal.js"></script>

@@ -111,6 +111,9 @@ button:focus-visible,a:focus-visible { outline:3px solid var(--teal); outline-of
 .deck-controls { position:fixed; bottom:17px; right:24px; display:flex; align-items:center; gap:7px; z-index:20; background:var(--bg); padding:5px 8px; border-radius:8px; }
 .deck-controls button { border:0; color:var(--muted); background:none; width:32px; height:32px; border-radius:5px; font-size:20px; }
 .deck-controls button:hover { background:#263140; color:var(--ink); }
+.deck-controls #motion { width:auto; padding:0 8px; font-size:12px; white-space:nowrap; }
+.deck-controls #motion[aria-pressed="true"] { color:var(--teal); }
+.deck-controls #motion:disabled { color:var(--muted); cursor:default; background:none; }
 .deck-controls #help { font-size:14px; width:25px; }
 .deck-controls #position { font:12px var(--mono); color:var(--muted); padding:0 7px; min-width:71px; text-align:center; }
 .deck-controls #replay { font-size:23px; margin-right:9px; }
@@ -122,7 +125,6 @@ dialog dl { display:grid; grid-template-columns:110px 1fr; gap:15px; font-size:1
 dialog dt { font-family:var(--mono); color:var(--teal); }
 dialog dd { margin:0; color:var(--muted); }
 dialog .close-dialog { position:absolute; right:18px; top:13px; color:var(--muted); border:0; background:none; font-size:28px; }
-.text-button { background:none; border:1px solid #526276; padding:9px 13px; border-radius:6px; color:var(--ink); margin-top:25px; }
 .dialog-hint { font-size:14px; color:var(--muted); margin:24px 0 0; line-height:1.6; }
 .reduced-motion *,.reduced-motion *:before,.reduced-motion *:after { animation:none!important; transition:none!important; scroll-behavior:auto!important; }
 @media(prefers-reduced-motion:reduce) {
@@ -150,6 +152,7 @@ html.print-pdf .build-dots { visibility:hidden; }
   <div id="loading" role="status">Opening the presentation…</div>
   <div class="reveal"><div class="slides"></div></div>
   <nav class="deck-controls" aria-label="Presentation controls">
+    <button id="motion" aria-label="Animations" aria-pressed="false" title="Toggle motion (M)">Motion</button>
     <button id="replay" title="Replay this build (R)" aria-label="Replay this build">↺</button>
     <button id="previous" title="Previous step (←)" aria-label="Previous step">←</button>
     <span id="position" aria-live="off">01 / 24</span>
@@ -168,9 +171,9 @@ html.print-pdf .build-dots { visibility:hidden; }
       <dt>S</dt><dd>Open speaker view and notes</dd>
       <dt>F</dt><dd>Fullscreen</dd>
       <dt>Esc / O</dt><dd>Slide overview</dd>
-      <dt>M</dt><dd>Toggle reduced motion</dd>
+      <dt>M</dt><dd>Toggle animations</dd>
     </dl>
-    <button id="motion" class="text-button">Reduce motion</button>
+    <p id="motion-status" class="dialog-hint" role="status"></p>
     <p class="dialog-hint">Each click reveals one idea. Nothing advances on a timer.</p>
   </dialog>
   <script>
@@ -1087,8 +1090,15 @@ const params = new URLSearchParams(location.search);
 const isPrint = params.has('print-pdf');
 const isStatic = isPrint || params.has('static');
 const motionPreference = matchMedia('(prefers-reduced-motion: reduce)');
-let reducedMotion = motionPreference.matches || isStatic;
-let motionOverride = false;
+const motionStorageKey = 'llm-recall-motion';
+let motionOverride = null;
+// Direct file access and privacy settings can make storage unavailable.
+try {
+  const saved = localStorage.getItem(motionStorageKey);
+  if (saved === 'on' || saved === 'off') motionOverride = saved;
+} catch {}
+let motionSaved = motionOverride !== null;
+let reducedMotion = isStatic || (motionOverride === null ? motionPreference.matches : motionOverride === 'off');
 const models = new Map();
 const parser = RevealMarkdown().marked;
 const parse = (source) => parser(source, { mangle: false, headerIds: false });
@@ -1112,7 +1122,18 @@ function renderMarkdown(source) {
 function setMotion() {
   document.body.classList.toggle('reduced-motion', reducedMotion);
   document.body.classList.toggle('motion-enabled', !reducedMotion);
-  document.querySelector('#motion').textContent = reducedMotion ? 'Enable motion' : 'Reduce motion';
+  const button = document.querySelector('#motion');
+  button.textContent = reducedMotion ? 'Motion off' : 'Motion on';
+  button.setAttribute('aria-pressed', String(!reducedMotion));
+  button.disabled = isStatic;
+  button.title = isStatic ? 'Motion is disabled in static and print views' : `${reducedMotion ? 'Enable' : 'Reduce'} motion (M)`;
+  document.querySelector('#motion-status').textContent = isStatic
+    ? 'Static and print views show final states without animation.'
+    : motionOverride !== null
+      ? `Animations are ${reducedMotion ? 'off' : 'on'}. ${motionSaved ? 'Your choice is saved for this browser.' : 'Your choice applies to this visit.'}`
+      : reducedMotion
+        ? 'Your device requests reduced motion. Press M or use the Motion button to enable animations.'
+        : 'Animations follow your device setting. Press M or use the Motion button to switch.';
 }
 
 function currentStep(section) {
@@ -1150,8 +1171,14 @@ function finish() {
 }
 
 function toggleMotion() {
+  if (isStatic) return;
   reducedMotion = !reducedMotion;
-  motionOverride = true;
+  motionOverride = reducedMotion ? 'off' : 'on';
+  motionSaved = false;
+  try {
+    localStorage.setItem(motionStorageKey, motionOverride);
+    motionSaved = true;
+  } catch {}
   setMotion();
   Reveal.configure({ transition: reducedMotion ? 'none' : 'fade' });
   paint(Reveal.getCurrentSlide(), false);
@@ -1249,7 +1276,7 @@ async function start() {
     if (dialog.open && !['Escape', 'Tab'].includes(e.key)) e.stopPropagation();
   }, true);
   motionPreference.addEventListener('change', e => {
-    if (!motionOverride && !isStatic) { reducedMotion = e.matches; setMotion(); Reveal.configure({ transition: reducedMotion ? 'none' : 'fade' }); paint(Reveal.getCurrentSlide(), false); }
+    if (motionOverride === null && !isStatic) { reducedMotion = e.matches; setMotion(); Reveal.configure({ transition: reducedMotion ? 'none' : 'fade' }); paint(Reveal.getCurrentSlide(), false); }
   });
 }
 

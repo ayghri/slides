@@ -54,6 +54,9 @@ button:focus-visible,a:focus-visible { outline:3px solid var(--teal); outline-of
 .deck-controls { position:fixed; bottom:17px; right:24px; display:flex; align-items:center; gap:7px; z-index:20; background:var(--bg); padding:5px 8px; border-radius:8px; }
 .deck-controls button { border:0; color:var(--muted); background:none; width:32px; height:32px; border-radius:5px; font-size:20px; }
 .deck-controls button:hover { background:#263140; color:var(--ink); }
+.deck-controls #motion { width:auto; padding:0 8px; font-size:12px; white-space:nowrap; }
+.deck-controls #motion[aria-pressed="true"] { color:var(--teal); }
+.deck-controls #motion:disabled { color:var(--muted); cursor:default; background:none; }
 .deck-controls #help { font-size:14px; width:25px; }
 .deck-controls #position { font:12px var(--mono); color:var(--muted); padding:0 7px; min-width:71px; text-align:center; }
 .deck-controls #replay { font-size:23px; margin-right:9px; }
@@ -65,7 +68,6 @@ dialog dl { display:grid; grid-template-columns:110px 1fr; gap:15px; font-size:1
 dialog dt { font-family:var(--mono); color:var(--teal); }
 dialog dd { margin:0; color:var(--muted); }
 dialog .close-dialog { position:absolute; right:18px; top:13px; color:var(--muted); border:0; background:none; font-size:28px; }
-.text-button { background:none; border:1px solid #526276; padding:9px 13px; border-radius:6px; color:var(--ink); margin-top:25px; }
 .dialog-hint { font-size:14px; color:var(--muted); margin:24px 0 0; line-height:1.6; }
 .reduced-motion *,.reduced-motion *:before,.reduced-motion *:after { animation:none!important; transition:none!important; scroll-behavior:auto!important; }
 @media(prefers-reduced-motion:reduce) {

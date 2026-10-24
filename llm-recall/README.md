@@ -17,10 +17,12 @@ John’s café order connects associative memory, softmax attention, and linear 
 | S | Open speaker view with notes and timer |
 | F | Fullscreen |
 | Esc / O | Slide overview |
-| M | Toggle reduced motion |
+| M | Toggle animations (also available in the Motion button) |
 | ? | Keyboard help |
 
 There are **58 presenter-controlled builds and 82 authored figure states**. Nothing advances automatically. Geometry, colors, and equation tokens ease between persistent SVG states; reverse navigation can interrupt motion without jumping. Reduced motion settles immediately.
+
+The toolbar shows **Motion on** or **Motion off**. The deck initially follows the device's Reduce Motion setting, which may differ between a phone and a laptop. Press **M** or click the Motion button to switch; your choice is remembered in that browser when local storage is available. Keyboard help explains the active setting. Static and print views always disable motion.
 
 The timing budget includes explanation and audience pauses. Rehearse using the speaker notes for the full 20-minute delivery.
 
